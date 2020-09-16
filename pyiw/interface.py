@@ -29,6 +29,16 @@ def is_monitor(interface):
 def is_wireless(interface):
     return interface in all_wireless()
 
+def is_support_monitor(interface):
+    info = get_info(interface)
+
+    try:
+        output = subprocess.check_output([Tools.IW, f"phy{info.wiphy}", 'info'], stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError as e:
+            raise e
+
+    if re.search(r"[\t ]+\* monitor[\n\r]+", output.decode('utf-8'), re.I):
+        return True
 
 def get_info(interface):
     if not is_wireless(interface):
@@ -92,15 +102,15 @@ def set_state(interface, state: InterfaceState):
     return True
 
 
-def add_monitor(interface, monitor):
+def add_monitor(interface, monitor_name):
     if not is_wireless(interface):
         raise IncorrectInterfaceError(f"Incorrect interface ... ({interface}). Use wireless interface.")
 
-    if monitor in all_monitor():
-        raise IncorrectInterfaceNameError(f"This interface {monitor} name already in use.")
+    if monitor_name in all_monitor():
+        raise IncorrectInterfaceNameError(f"This interface {monitor_name} name already in use.")
 
     try:
-        subprocess.run([Tools.IW, 'dev', interface, 'interface', 'add', monitor, 'type', 'monitor'], check=True, stderr=subprocess.DEVNULL)
+        subprocess.run([Tools.IW, 'dev', interface, 'interface', 'add', monitor_name, 'type', 'monitor'], check=True, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         if e.returncode == 255:
             raise PermissionError(e)
